@@ -2,6 +2,7 @@ require("dotenv").config();
 
 const express = require("express");
 const connectDB = require("./config/db");
+
 const webhookRouter = require("./webhook");
 const razorpayWebhookRouter = require("./razorpayWebhook");
 
@@ -11,11 +12,27 @@ app.use("/razorpay/webhook",
      express.raw({
         type: "application/json"
     }),
-    razorpayWebhookRouter);
+    razorpayWebhookRouter
+);
 
 app.use(express.json());
+
+app.use(async (req, res, next) => {
+    try {
+        await connectDB();
+        next();
+    } catch (error) {
+        console.error("MongoDB connection failed:");
+        console.error(error.message);
+
+        res.status(500).json({
+            error: "Database connection failed"
+        });
+    }
+});
+
 app.use("/webhook", webhookRouter);
-connectDB();
+
 
 app.get("/", (req, res) => {
     res.json({
@@ -25,6 +42,8 @@ app.get("/", (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+module.exports = app;
+
+// app.listen(PORT, () => {
+//     console.log(`Server is running on port ${PORT}`);
+// })
